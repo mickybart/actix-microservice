@@ -1,4 +1,4 @@
-use actix_web::{get, middleware::Logger, web, App, HttpServer, Responder};
+use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use actix_web_opentelemetry::RequestTracing;
 use env_logger::Env;
 use opentelemetry_otlp::WithExportConfig;
@@ -17,6 +17,7 @@ async fn main() -> std::io::Result<()> {
             .service(health)
             .service(helloworld)
             .service(hello)
+            .default_service(web::route().to(HttpResponse::MethodNotAllowed))
     })
     .bind(("0.0.0.0", 3000))?
     .run()
