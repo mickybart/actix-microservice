@@ -1,5 +1,6 @@
 use actix_web::{get, web};
 use tracing::instrument;
+use serde::Deserialize;
 
 pub fn register(cfg: &mut web::ServiceConfig) {
     cfg.service(helloworld).service(slow_world).service(hello);
@@ -15,10 +16,19 @@ async fn hello(name: web::Path<String>) -> String {
     format!("Hello, {name} !")
 }
 
+#[derive(Deserialize)]
+struct SlowQuery {
+    times: Option<u8>
+}
+
 #[get("/slowworld")]
-async fn slow_world() -> &'static str {
-    slow_down().await;
-    slow_down().await;
+async fn slow_world(info: web::Query<SlowQuery>) -> &'static str {
+    let times = info.times.unwrap_or(2);
+
+    for _ in 0..times {
+        slow_down().await;
+    }
+
     "Hellooooo, Wooooorld"
 }
 
