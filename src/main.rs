@@ -19,12 +19,16 @@ async fn main() -> std::io::Result<()> {
     info!("listening on {}", addr);
 
     HttpServer::new(|| {
-        App::new()
+        let app = App::new()
             .wrap(Logger::default().log_target("http_log").exclude("/health"))
             .wrap(RequestTracing::new())
             .service(health)
-            .default_service(web::route().to(HttpResponse::MethodNotAllowed))
-            .configure(crate::api::helloworld::register)
+            .default_service(web::route().to(HttpResponse::MethodNotAllowed));
+
+        #[cfg(feature = "helloworld")]
+        let app = app.configure(crate::api::helloworld::register);
+
+        app
     })
     .bind(addr)?
     .run()
