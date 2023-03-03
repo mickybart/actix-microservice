@@ -23,8 +23,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default().log_target("http_log").exclude("/health"))
             .wrap(RequestTracing::new())
             .service(health)
-            .configure(crate::api::helloworld::register)
             .default_service(web::route().to(HttpResponse::MethodNotAllowed))
+            .configure(crate::api::helloworld::register)
     })
     .bind(addr)?
     .run()
