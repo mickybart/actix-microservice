@@ -1,14 +1,12 @@
 use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use actix_web_opentelemetry::RequestTracing;
-use env_logger::Env;
 use opentelemetry_otlp::WithExportConfig;
 use serde_json::json;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     init_telemetry();
-
-    env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     HttpServer::new(|| {
         App::new()
@@ -16,6 +14,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(RequestTracing::new())
             .service(health)
             .service(helloworld)
+            .service(slow_world)
             .service(hello)
             .default_service(web::route().to(HttpResponse::MethodNotAllowed))
     })
@@ -33,7 +32,7 @@ fn init_telemetry() {
         opentelemetry::sdk::propagation::TraceContextPropagator::new(),
     );
 
-    opentelemetry_otlp::new_pipeline()
+    let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_env())
         .with_trace_config(
@@ -43,6 +42,19 @@ fn init_telemetry() {
         )
         .install_batch(opentelemetry::runtime::TokioCurrentThread)
         .expect("telemetry setup failure !");
+
+    let env_filter =
+        tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into());
+
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    let logs_layer = tracing_subscriber::fmt::layer();
+
+    tracing_subscriber::registry()
+        .with(env_filter)
+        .with(telemetry)
+        .with(logs_layer)
+        .init()
 }
 
 fn stop_telemetry() {
@@ -65,4 +77,16 @@ async fn health() -> impl Responder {
     web::Json(json!({
         "status": "ok"
     }))
+}
+
+#[get("/slowworld")]
+async fn slow_world() -> &'static str {
+    slow_down().await;
+    slow_down().await;
+    "Hellooooo, Wooooorld"
+}
+
+#[tracing::instrument]
+async fn slow_down() {
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 }
