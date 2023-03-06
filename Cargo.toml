@@ -21,4 +21,8 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 [features]
 default = ["helloworld"]
 helloworld = []
-metrics = ["actix-web-opentelemetry/metrics-prometheus", "opentelemetry-prometheus"]
+metrics = ["actix-web-opentelemetry/metrics-prometheus", "dep:opentelemetry-prometheus"]
+
+[profile.release]
+opt-level = "s"
+strip = true

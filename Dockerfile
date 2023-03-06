@@ -6,11 +6,13 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
+ARG FEATURES="helloworld,metrics"
+
 WORKDIR /usr/src/
 COPY . .
 
-RUN cargo build --release --target x86_64-unknown-linux-gnu
-RUN cargo test --release --target x86_64-unknown-linux-gnu
+RUN cargo build --release --target x86_64-unknown-linux-gnu --no-default-features --features="$FEATURES"
+RUN cargo test --release --target x86_64-unknown-linux-gnu --no-default-features --features="$FEATURES"
 RUN mv /usr/src/target/x86_64-unknown-linux-gnu/release/actix-microservice ./microservice
 
 # Production image

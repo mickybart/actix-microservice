@@ -60,7 +60,16 @@ cargo run --no-default-features
 
 ```bash
 # build is deprecated; use buildx: https://docs.docker.com/build/install-buildx/
+
+# default build
 docker buildx build -t rust/microservice .
+
+# without any features
+docker buildx build \
+    --build-arg FEATURES="" \
+    -t rust/microservice .
+
+# run it
 docker run -it --rm \
     -p 3000:3000 \
     rust/microservice
