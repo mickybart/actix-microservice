@@ -13,14 +13,14 @@ opentelemetry-otlp = { version = "0.11.0" }
 opentelemetry-prometheus = { version = "0.11.0", optional = true }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
-tokio = { version = "1.26.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.26.0", features = ["rt-multi-thread"], optional = true }
 tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
 [features]
 default = ["helloworld"]
-helloworld = []
+helloworld = ["dep:tokio"]
 metrics = ["actix-web-opentelemetry/metrics-prometheus", "dep:opentelemetry-prometheus"]
 
 [profile.release]
