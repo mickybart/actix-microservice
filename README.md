@@ -10,16 +10,19 @@
 # health
 curl -i http://localhost:3000/health
 
-# hello world
+# hello world (only with helloworld feature)
 curl -i http://localhost:3000/
 
-# hello logged user
+# hello logged user (only with helloworld feature)
 NAME=$(whoami)
 curl -i http://localhost:3000/$NAME
 
-# hello slow world
+# hello slow world (only with helloworld feature)
 curl -i http://localhost:3000/slowworld
 curl -i http://localhost:3000/slowworld?times=4 # any number equal or greeter to 0
+
+# prometheus metrics (only with metrics feature)
+curl -i http://localhost:3000/metrics
 
 # 405 Method Not Allowed !
 curl -i http://localhost:3000/something/else
@@ -51,9 +54,7 @@ cargo test --release --target x86_64-unknown-linux-gnu
 cargo run --release --target x86_64-unknown-linux-gnu
 unset RUSTFLAGS
 
-# disable helloworld default feature (see Cargo.toml)
-# will remove all endpoints except /health
-cargo run --no-default-features
+# See alternative build in Features section
 ```
 
 #### docker
@@ -112,3 +113,25 @@ open http://localhost:16686/
 OTEL_SERVICE_NAME="microservice" OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317" cargo run
 
 ```
+
+### Features
+
+This microservice exposes 2 features:
+
+| name       | description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| helloworld | Provides all helloworld endpoints (/, /helloworld, /slowworld, /{name}) |
+| metrics    | Provides prometheus metrics with /metrics endpoint           |
+
+```bash
+# disable helloworld default feature (see Cargo.toml)
+# will remove all endpoints except /health
+cargo run --no-default-features
+
+# use metrics and default features
+cargo run --features="metrics"
+
+# use metrics without helloworld
+cargo run --no-default-features --features="metrics"
+```
+
