@@ -1,6 +1,6 @@
 mod api;
 mod config;
-mod logging;
+mod observability;
 
 use actix_web::{get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use actix_web_opentelemetry::RequestTracing;
@@ -13,10 +13,10 @@ use crate::config::Config;
 async fn main() -> std::io::Result<()> {
     let config = Config::build();
 
-    logging::init(&config);
+    observability::init(&config);
 
     #[cfg(feature = "metrics")]
-    let (metrics_handler, request_metrics) = logging::init_metrics();
+    let (metrics_handler, request_metrics) = observability::init_metrics();
 
     let addr = "0.0.0.0:3000";
     info!("listening on {}", addr);
@@ -42,7 +42,7 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await?;
 
-    logging::stop(&config);
+    observability::stop(&config);
 
     Ok(())
 }
