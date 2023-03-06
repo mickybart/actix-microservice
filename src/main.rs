@@ -15,13 +15,28 @@ async fn main() -> std::io::Result<()> {
 
     logging::init(&config);
 
+    #[cfg(feature = "metrics")]
+    let (metrics_handler, request_metrics) = logging::init_metrics();
+
     let addr = "0.0.0.0:3000";
     info!("listening on {}", addr);
 
-    HttpServer::new(|| {
-        app!()
+    HttpServer::new(move || {
+        let app = App::new()
             .wrap(Logger::default().log_target("http_log").exclude("/health"))
             .wrap(RequestTracing::new())
+            .service(health)
+            .default_service(web::route().to(HttpResponse::MethodNotAllowed));
+
+        #[cfg(feature = "metrics")]
+        let app = app
+            .wrap(request_metrics.clone())
+            .route("/metrics", web::get().to(metrics_handler.clone()));
+
+        #[cfg(feature = "helloworld")]
+        let app = app.configure(crate::api::helloworld::register);
+
+        app
     })
     .bind(addr)?
     .run()
@@ -30,21 +45,6 @@ async fn main() -> std::io::Result<()> {
     logging::stop(&config);
 
     Ok(())
-}
-
-// WORKAROUND with macro as returning App from a function is not trivial (see multiple issues discussion on this topic)
-#[macro_export]
-macro_rules! app {
-    () => {{
-        let app = App::new()
-            .service(health)
-            .default_service(web::route().to(HttpResponse::MethodNotAllowed));
-
-        #[cfg(feature = "helloworld")]
-        let app = app.configure(crate::api::helloworld::register);
-
-        app
-    }};
 }
 
 #[get("/health")]
@@ -59,6 +59,21 @@ mod tests {
     use actix_web::{body::to_bytes, test, App};
 
     use super::*;
+
+    // WORKAROUND with macro as returning App from a function is not trivial (see multiple issues discussion on this topic)
+    #[macro_export]
+    macro_rules! app {
+        () => {{
+            let app = App::new()
+                .service(health)
+                .default_service(web::route().to(HttpResponse::MethodNotAllowed));
+
+            #[cfg(feature = "helloworld")]
+            let app = app.configure(crate::api::helloworld::register);
+
+            app
+        }};
+    }
 
     #[actix_web::test]
     async fn test_health() {

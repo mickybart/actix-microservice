@@ -64,3 +64,33 @@ fn init_tracing() {
         .with(logs_layer)
         .init();
 }
+
+#[cfg(feature = "metrics")]
+pub fn init_metrics() -> (
+    actix_web_opentelemetry::PrometheusMetricsHandler,
+    actix_web_opentelemetry::RequestMetrics,
+) {
+    use opentelemetry::sdk::{
+        export::metrics::aggregation,
+        metrics::{controllers, processors, selectors},
+    };
+
+    let metrics_handler = {
+        let controller = controllers::basic(
+            processors::factory(
+                selectors::simple::histogram([1.0, 2.0, 5.0, 10.0, 20.0, 50.0]),
+                aggregation::cumulative_temporality_selector(),
+            )
+            .with_memory(true),
+        )
+        .build();
+
+        let exporter = opentelemetry_prometheus::exporter(controller).init();
+        actix_web_opentelemetry::PrometheusMetricsHandler::new(exporter)
+    };
+
+    let meter = opentelemetry::global::meter("actix_web");
+    let request_metrics = actix_web_opentelemetry::RequestMetricsBuilder::new().build(meter);
+
+    (metrics_handler, request_metrics)
+}
