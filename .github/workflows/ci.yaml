@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  push:
+    branches:
+    - "feature/**"
+    - main
+
+jobs:
+  build:
+    name: Production ready image (no push)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: docker/setup-buildx-action@v2
+    - name: builder
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        # target: builder
+        load: true
+        tags: rust/microservice
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
