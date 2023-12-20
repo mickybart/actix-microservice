@@ -1,4 +1,3 @@
-use opentelemetry_otlp::WithExportConfig;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 use crate::config::Config;
@@ -19,18 +18,18 @@ pub fn stop(config: &Config) {
 
 fn init_telemetry() {
     opentelemetry::global::set_text_map_propagator(
-        opentelemetry::sdk::propagation::TraceContextPropagator::new(),
+        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
     );
 
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(opentelemetry_otlp::new_exporter().tonic().with_env())
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
         .with_trace_config(
-            opentelemetry::sdk::trace::config()
-                .with_resource(opentelemetry::sdk::Resource::default())
-                .with_sampler(opentelemetry::sdk::trace::Sampler::AlwaysOn),
+            opentelemetry_sdk::trace::config()
+                .with_resource(opentelemetry_sdk::Resource::default())
+                .with_sampler(opentelemetry_sdk::trace::Sampler::AlwaysOn),
         )
-        .install_batch(opentelemetry::runtime::TokioCurrentThread)
+        .install_batch(opentelemetry_sdk::runtime::TokioCurrentThread)
         .expect("telemetry setup failure !");
 
     let env_filter =
