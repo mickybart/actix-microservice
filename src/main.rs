@@ -10,13 +10,13 @@ use tracing::info;
 use crate::config::Config;
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::build();
 
     observability::init(&config);
 
     #[cfg(feature = "metrics")]
-    let (metrics_handler, request_metrics) = observability::init_metrics();
+    let (metrics_handler, meter_provider) = observability::init_metrics();
 
     let addr = "0.0.0.0:3000";
     info!("listening on {}", addr);
@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 
         #[cfg(feature = "metrics")]
         let app = app
-            .wrap(request_metrics.clone())
+            .wrap(actix_web_opentelemetry::RequestMetrics::default())
             .route("/metrics", web::get().to(metrics_handler.clone()));
 
         #[cfg(feature = "helloworld")]
@@ -43,6 +43,9 @@ async fn main() -> std::io::Result<()> {
     .await?;
 
     observability::stop(&config);
+
+    #[cfg(feature = "metrics")]
+    meter_provider.shutdown()?;
 
     Ok(())
 }

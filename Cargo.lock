@@ -78,6 +78,7 @@ dependencies = [
  "opentelemetry-otlp",
  "opentelemetry-prometheus",
  "opentelemetry_sdk",
+ "prometheus",
  "serde",
  "serde_json",
  "tokio",

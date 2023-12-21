@@ -67,29 +67,37 @@ fn init_tracing() {
 #[cfg(feature = "metrics")]
 pub fn init_metrics() -> (
     actix_web_opentelemetry::PrometheusMetricsHandler,
-    actix_web_opentelemetry::RequestMetrics,
+    opentelemetry_sdk::metrics::MeterProvider,
 ) {
-    use opentelemetry::sdk::{
-        export::metrics::aggregation,
-        metrics::{controllers, processors, selectors},
-    };
+    use opentelemetry_sdk::metrics::{Aggregation, Instrument, MeterProvider, Stream};
 
-    let metrics_handler = {
-        let controller = controllers::basic(
-            processors::factory(
-                selectors::simple::histogram([1.0, 2.0, 5.0, 10.0, 20.0, 50.0]),
-                aggregation::cumulative_temporality_selector(),
+    let (metrics_handler, meter_provider) = {
+        let registry = prometheus::Registry::new();
+        let exporter = opentelemetry_prometheus::exporter()
+            .with_registry(registry.clone())
+            .build()
+            .expect("Metrics exporter failure !");
+
+        let provider = MeterProvider::builder()
+            .with_reader(exporter)
+            .with_view(
+                opentelemetry_sdk::metrics::new_view(
+                    Instrument::new().name("http.server.duration"),
+                    Stream::new().aggregation(Aggregation::ExplicitBucketHistogram {
+                        boundaries: vec![
+                            0.0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5,
+                            5.0, 7.5, 10.0,
+                        ],
+                        record_min_max: true,
+                    }),
+                ).unwrap()
             )
-            .with_memory(true),
-        )
-        .build();
+            .build();
 
-        let exporter = opentelemetry_prometheus::exporter(controller).init();
-        actix_web_opentelemetry::PrometheusMetricsHandler::new(exporter)
+        opentelemetry::global::set_meter_provider(provider.clone());
+
+        (actix_web_opentelemetry::PrometheusMetricsHandler::new(registry), provider)
     };
 
-    let meter = opentelemetry::global::meter("actix_web");
-    let request_metrics = actix_web_opentelemetry::RequestMetricsBuilder::new().build(meter);
-
-    (metrics_handler, request_metrics)
+    (metrics_handler, meter_provider)
 }

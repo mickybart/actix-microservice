@@ -12,6 +12,7 @@ opentelemetry = { version = "0.21.0", default-features = false, features = ["tra
 opentelemetry_sdk = { version = "0.21", features = ["metrics", "rt-tokio-current-thread"] }
 opentelemetry-otlp = { version = "0.14.0" }
 opentelemetry-prometheus = { version = "0.14.1", optional = true }
+prometheus = { version = "0.13.3", default-features = false, optional = true }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 tokio = { version = "1.35.1", features = ["rt-multi-thread"], optional = true }
@@ -22,7 +23,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 [features]
 default = ["helloworld"]
 helloworld = ["dep:tokio"]
-metrics = ["actix-web-opentelemetry/metrics-prometheus", "dep:opentelemetry-prometheus"]
+metrics = ["actix-web-opentelemetry/metrics-prometheus", "dep:opentelemetry-prometheus", "dep:prometheus"]
 
 [profile.release]
 opt-level = "s"
