@@ -84,6 +84,46 @@ docker run -it --rm \
 unset RUST_LOG
 ```
 
+##### Cross Compilation
+
+Platforms supported:
+- aarch64 (arm64)
+- x86_64 (amd64)
+
+TODO: Cross compilation can be improved by using [cross-rs](https://github.com/cross-rs/cross).
+
+**One image per platform:**
+
+```bash
+# default build for aarch64
+docker buildx build --platform="linux/arm64" -t rust/microservice .
+
+# default build for x86_64
+docker buildx build --platform="linux/amd64" -t rust/microservice .
+```
+
+**Multi-platform:**
+
+```bash
+# default build for multi-platform
+
+# ** a docker-container builder is required
+docker buildx ls
+
+# ** if you have no docker-container builder
+# **** create buildkitd.toml if you need to control max-parallelism
+cat <<EOF > /etc/buildkit/buildkitd.toml
+[worker.oci]
+  max-parallelism = 1
+EOF
+docker buildx create --use --name multi-platform-builder --driver docker-container --bootstrap --config /etc/buildkit/buildkitd.toml
+
+docker buildx build --platform="linux/arm64,linux/amd64" -t rust/microservice .
+
+# **** if you want to remove the builder at the end
+# docker buildx rm multi-platform-builder
+```
+
 ### Logs
 
 Use `RUST_LOG` to change the tracing behaviour
