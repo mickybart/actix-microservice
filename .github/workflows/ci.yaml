@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Production ready image (no push)
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     steps:
     - uses: actions/checkout@v3
     - uses: docker/setup-buildx-action@v3
